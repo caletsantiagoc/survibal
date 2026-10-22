@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Survival RPG: Mundo Abierto 2D</title>
+  <meta name="description" content="Videojuego 2D de supervivencia y RPG en mundo abierto para navegador. Explora, recolecta recursos, fabrica objetos, combate enemigos y derrota al Guardián del Bosque.">
+  <link rel="stylesheet" href="./styles/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚔️</text></svg>">
+</head>
+<body>
+  <div id="game-container">
+    <!-- Main Game Canvas -->
+    <canvas id="game-canvas"></canvas>
+
+    <!-- IN-GAME HUD OVERLAY -->
+    <div id="hud-overlay">
+      <!-- Top HUD -->
+      <div class="hud-top">
+        <!-- Player stats & Quest widget container -->
+        <div>
+          <div class="hud-player-stats interactive">
+            <div class="player-info-row">
+              <span class="player-name-badge" id="hud-player-name">Héroe</span>
+              <span class="player-level-badge" id="hud-player-level">Nivel 1</span>
+            </div>
+            <!-- Health Bar -->
+            <div class="stat-bar-container" title="Vida">
+              <span class="stat-icon">❤️</span>
+              <div class="stat-bar-track">
+                <div class="stat-bar-fill fill-hp" id="bar-hp" style="width: 100%;"></div>
+                <span class="stat-text" id="text-hp">100 / 100</span>
+              </div>
+            </div>
+            <!-- Hunger Bar -->
+            <div class="stat-bar-container" title="Hambre">
+              <span class="stat-icon">🍖</span>
+              <div class="stat-bar-track">
+                <div class="stat-bar-fill fill-hunger" id="bar-hunger" style="width: 100%;"></div>
+                <span class="stat-text" id="text-hunger">100%</span>
+              </div>
+            </div>
+            <!-- Thirst Bar -->
+            <div class="stat-bar-container" title="Sed">
+              <span class="stat-icon">💧</span>
+              <div class="stat-bar-track">
+                <div class="stat-bar-fill fill-thirst" id="bar-thirst" style="width: 100%;"></div>
+                <span class="stat-text" id="text-thirst">100%</span>
+              </div>
+            </div>
+            <!-- Energy Bar -->
+            <div class="stat-bar-container" title="Energía">
+              <span class="stat-icon">⚡</span>
+              <div class="stat-bar-track">
+                <div class="stat-bar-fill fill-energy" id="bar-energy" style="width: 100%;"></div>
+                <span class="stat-text" id="text-energy">100%</span>
+              </div>
+            </div>
+            <!-- XP Bar -->
+            <div class="stat-bar-container" title="Experiencia">
+              <span class="stat-icon">✨</span>
+              <div class="stat-bar-track">
+                <div class="stat-bar-fill fill-xp" id="bar-xp" style="width: 0%;"></div>
+                <span class="stat-text" id="text-xp">0 / 100 XP</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quest tracker -->
+          <div class="hud-quest-widget interactive" id="hud-quest-tracker">
+            <div class="quest-widget-title">
+              <span>Misión Actual</span>
+              <span style="font-size:0.7rem; color:var(--text-muted); cursor:pointer;" id="btn-open-quest-log">[Q] Ver</span>
+            </div>
+            <div class="quest-current-name" id="hud-quest-name">Cargando misión...</div>
+            <div class="quest-current-objective" id="hud-quest-objective">Objetivo</div>
+            <div class="quest-progress-text" id="hud-quest-progress">0/0</div>
+          </div>
+        </div>
+
+        <!-- Time & Day Tracker -->
+        <div class="hud-time-container interactive">
+          <span class="clock-icon" id="hud-time-icon">☀️</span>
+          <span class="day-badge" id="hud-day-text">Día 1</span>
+          <span id="hud-clock-text">08:00</span>
+          <span style="margin-left: 10px; color: #ffd700;" title="Monedas de oro">🪙 <strong id="hud-gold-text">0</strong></span>
+        </div>
+
+        <!-- Minimap Radar -->
+        <div class="hud-minimap-wrapper interactive">
+          <canvas id="minimap-canvas" width="150" height="150"></canvas>
+          <button class="minimap-btn" id="btn-open-map" title="Abrir Mapa Completo">Mapa [M]</button>
+        </div>
+      </div>
+
+      <!-- Boss HUD Bar (shown only when fighting the boss) -->
+      <div id="boss-hud">
+        <div class="boss-header">
+          <span class="boss-name" id="boss-name-text">🌲 Guardián del Bosque</span>
+          <span class="boss-title">Jefe Ancestral</span>
+        </div>
+        <div class="boss-bar-track">
+          <div class="boss-bar-fill" id="boss-hp-fill" style="width: 100%;"></div>
+        </div>
+      </div>
+
+      <!-- Interaction Prompt Tooltip -->
+      <div id="interaction-prompt">
+        <span>Presiona</span>
+        <kbd style="background:var(--border-gold); color:#000; padding:2px 6px; border-radius:4px; font-weight:800;">E</kbd>
+        <span id="interaction-text">para interactuar</span>
+      </div>
+
+      <!-- Toast Notifications Container -->
+      <div id="toast-container"></div>
+
+      <!-- Bottom HUD -->
+      <div class="hud-bottom">
+        <!-- Quick Action Menu Buttons -->
+        <div class="hud-quick-actions interactive">
+          <button class="hud-btn" id="btn-inventory">🎒 Mochila <kbd>I</kbd></button>
+          <button class="hud-btn" id="btn-crafting">🔨 Fabricación <kbd>C</kbd></button>
+          <button class="hud-btn" id="btn-quests">📜 Misiones <kbd>Q</kbd></button>
+          <button class="hud-btn" id="btn-map">🗺️ Mapa <kbd>M</kbd></button>
+        </div>
+
+        <!-- Hotbar (Slots 1 to 6) -->
+        <div class="hud-hotbar interactive" id="hud-hotbar">
+          <!-- Dynamically populated slots -->
+        </div>
+
+        <!-- Sound & Pause Quick Controls -->
+        <div class="interactive" style="display:flex; gap:8px;">
+          <button class="hud-btn" id="btn-mute-sound" title="Alternar Sonido">🔊</button>
+          <button class="hud-btn" id="btn-pause-quick" title="Pausar juego">⏸️ <kbd>ESC</kbd></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: INVENTARIO -->
+    <div class="modal-overlay" id="inventory-modal">
+      <div class="modal-window">
+        <div class="modal-header">
+          <h2 class="modal-title">Inventario de Supervivencia</h2>
+          <button class="modal-close-btn" data-close="inventory-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="inventory-layout">
+            <div class="inventory-left">
+              <div>
+                <div class="section-label">Equipamiento</div>
+                <div class="equipment-section" style="margin-top:8px;">
+                  <div class="equip-slot-container">
+                    <span class="equip-slot-label">Arma</span>
+                    <div class="inv-slot" id="equip-weapon" data-equip-type="weapon"></div>
+                  </div>
+                  <div class="equip-slot-container">
+                    <span class="equip-slot-label">Armadura</span>
+                    <div class="inv-slot" id="equip-armor" data-equip-type="armor"></div>
+                  </div>
+                  <div class="equip-slot-container">
+                    <span class="equip-slot-label">Accesorio</span>
+                    <div class="inv-slot" id="equip-accessory" data-equip-type="accessory"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <div class="section-label" style="display:flex; justify-content:space-between;">
+                  <span>Mochila (Capacidad: 24)</span>
+                  <span style="color:var(--text-gold);">Oro: <span id="inv-gold-count">0</span> 🪙</span>
+                </div>
+                <div class="inventory-grid" id="inv-grid-slots" style="margin-top:8px;">
+                  <!-- Slots 0..23 -->
+                </div>
+              </div>
+            </div>
+
+            <div class="item-details-panel">
+              <div class="item-details-top">
+                <div class="item-detail-icon" id="detail-icon">❓</div>
+                <div class="item-detail-name" id="detail-name">Selecciona un objeto</div>
+                <div class="item-detail-type" id="detail-type">-</div>
+                <div class="item-detail-desc" id="detail-desc">Haz clic en un objeto del inventario para ver detalles y opciones.</div>
+                <div class="item-detail-stats" id="detail-stats"></div>
+              </div>
+              <div class="item-actions-box" id="detail-actions" style="display:none;">
+                <button class="action-btn" id="btn-use-item">Usar</button>
+                <button class="action-btn" id="btn-equip-item">Equipar</button>
+                <button class="action-btn btn-danger" id="btn-drop-item">Soltar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: CRAFTING / FABRICACIÓN -->
+    <div class="modal-overlay" id="crafting-modal">
+      <div class="modal-window">
+        <div class="modal-header">
+          <h2 class="modal-title">Taller de Fabricación</h2>
+          <button class="modal-close-btn" data-close="crafting-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="crafting-layout">
+            <div class="craft-categories">
+              <button class="craft-cat-btn active" data-category="tools">Herramientas</button>
+              <button class="craft-cat-btn" data-category="weapons">Armas</button>
+              <button class="craft-cat-btn" data-category="survival">Supervivencia</button>
+              <button class="craft-cat-btn" data-category="building">Construcción</button>
+              <button class="craft-cat-btn" data-category="food">Cocina / Medicina</button>
+            </div>
+            <div class="craft-recipes-list" id="craft-recipes-list">
+              <!-- Dynamically populated recipes -->
+            </div>
+            <div class="craft-preview-panel">
+              <div>
+                <div class="item-detail-icon" id="craft-preview-icon">🔨</div>
+                <div class="item-detail-name" id="craft-preview-name">Selecciona receta</div>
+                <div class="item-detail-desc" id="craft-preview-desc" style="margin-top:6px;">Revisa los ingredientes necesarios.</div>
+                <div class="section-label" style="margin-top:14px;">Materiales necesarios:</div>
+                <div class="ingredients-list" id="craft-ingredients-list">
+                  <!-- Ingredients -->
+                </div>
+              </div>
+              <button class="action-btn" id="btn-do-craft" style="margin-top:16px;">Fabricar Objeto</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: MISIONES (QUESTS) -->
+    <div class="modal-overlay" id="quest-modal">
+      <div class="modal-window">
+        <div class="modal-header">
+          <h2 class="modal-title">Diario de Misiones</h2>
+          <button class="modal-close-btn" data-close="quest-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="quest-list" id="quest-log-container">
+            <!-- Quests rendered here -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: MAPA COMPLETO -->
+    <div class="modal-overlay" id="map-modal">
+      <div class="modal-window">
+        <div class="modal-header">
+          <h2 class="modal-title">Mapa de la Región</h2>
+          <button class="modal-close-btn" data-close="map-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="world-map-container">
+            <canvas id="full-map-canvas" width="600" height="420"></canvas>
+            <div class="map-legend">
+              <div class="legend-item"><span class="legend-dot" style="background:#52b788;"></span> Pradera</div>
+              <div class="legend-item"><span class="legend-dot" style="background:#2d6a4f;"></span> Bosque</div>
+              <div class="legend-item"><span class="legend-dot" style="background:#6c757d;"></span> Montañas</div>
+              <div class="legend-item"><span class="legend-dot" style="background:#0077b6;"></span> Lago / Río</div>
+              <div class="legend-item"><span class="legend-dot" style="background:#e76f51;"></span> Aldea</div>
+              <div class="legend-item"><span class="legend-dot" style="background:#9d0208;"></span> Zona Peligrosa (Boss)</div>
+              <div class="legend-item"><span class="legend-dot" style="background:#ffd700;"></span> Tú (Jugador)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: DIÁLOGO CON NPC / TIENDA -->
+    <div class="modal-overlay" id="dialogue-modal">
+      <div class="modal-window">
+        <div class="modal-header">
+          <h2 class="modal-title" id="npc-title-header">Conversación</h2>
+          <button class="modal-close-btn" data-close="dialogue-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="dialogue-content">
+            <div class="npc-portrait" id="npc-portrait-icon">🧙‍♂️</div>
+            <div class="dialogue-main">
+              <div>
+                <h3 class="npc-name" id="npc-name-display">Nombre NPC</h3>
+                <div class="dialogue-text" id="dialogue-text-content">Texto del NPC...</div>
+              </div>
+              <div class="dialogue-options" id="dialogue-action-buttons">
+                <!-- Action buttons (Comerciar, Curar, Continuar) -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: TIENDA DEL COMERCIANTE / HERRERO -->
+    <div class="modal-overlay" id="shop-modal">
+      <div class="modal-window" style="width: 700px;">
+        <div class="modal-header">
+          <h2 class="modal-title" id="shop-title">Tienda de Mercader</h2>
+          <button class="modal-close-btn" data-close="shop-modal">&times;</button>
+        </div>
+        <div class="modal-body" style="flex-direction:column; gap:14px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; gap:8px;">
+              <button class="action-btn active" id="shop-tab-buy">Comprar</button>
+              <button class="action-btn" id="shop-tab-sell">Vender</button>
+            </div>
+            <div style="color:var(--text-gold); font-weight:700;">Tus monedas: <span id="shop-player-gold">0</span> 🪙</div>
+          </div>
+          <div id="shop-items-list" style="display:flex; flex-direction:column; gap:8px; max-height:350px; overflow-y:auto;">
+            <!-- Items for sale / to sell -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: COFRE DE ALMACENAMIENTO -->
+    <div class="modal-overlay" id="chest-modal">
+      <div class="modal-window">
+        <div class="modal-header">
+          <h2 class="modal-title">Cofre de Almacenamiento</h2>
+          <button class="modal-close-btn" data-close="chest-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="chest-layout">
+            <div class="chest-section">
+              <div class="section-label">Contenido del Cofre (16 espacios)</div>
+              <div class="chest-grid" id="chest-grid-slots"></div>
+            </div>
+            <div class="chest-section">
+              <div class="section-label">Tu Mochila</div>
+              <div class="chest-grid" id="chest-player-grid-slots"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: PAUSA -->
+    <div class="modal-overlay" id="pause-modal">
+      <div class="modal-window">
+        <h1 class="game-title" style="font-size:1.8rem;">JUEGO EN PAUSA</h1>
+        <div class="menu-buttons">
+          <button class="menu-btn primary" id="btn-resume-game">Continuar Partida</button>
+          <button class="menu-btn" id="btn-save-game">Guardar Partida 💾</button>
+          <button class="menu-btn" id="btn-load-game">Cargar Último Guardado 📂</button>
+          <button class="menu-btn" id="btn-show-controls">Ver Controles ⌨️</button>
+          <button class="menu-btn" id="btn-exit-to-menu">Volver al Menú Principal 🚪</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: CONTROLES -->
+    <div class="modal-overlay" id="controls-modal">
+      <div class="modal-window">
+        <div class="modal-header">
+          <h2 class="modal-title">Controles del Juego</h2>
+          <button class="modal-close-btn" data-close="controls-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="controls-grid" style="width:100%;">
+            <div class="control-item"><span>Moverse:</span> <span class="control-key">W A S D / Flechas</span></div>
+            <div class="control-item"><span>Correr (Gasta Energía):</span> <span class="control-key">Shift</span></div>
+            <div class="control-item"><span>Interactuar (Recoger / Hablar):</span> <span class="control-key">E</span></div>
+            <div class="control-item"><span>Atacar / Golpear:</span> <span class="control-key">Espacio / Clic Izq.</span></div>
+            <div class="control-item"><span>Inventario y Equipo:</span> <span class="control-key">I</span></div>
+            <div class="control-item"><span>Fabricación (Crafting):</span> <span class="control-key">C</span></div>
+            <div class="control-item"><span>Diario de Misiones:</span> <span class="control-key">Q</span></div>
+            <div class="control-item"><span>Mapa del Mundo:</span> <span class="control-key">M</span></div>
+            <div class="control-item"><span>Pausa:</span> <span class="control-key">ESC</span></div>
+            <div class="control-item"><span>Barra Rápida:</span> <span class="control-key">1 al 6</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OVERLAY: MENÚ PRINCIPAL -->
+    <div class="modal-overlay" id="menu-overlay" style="display:flex;">
+      <div class="modal-window">
+        <div>
+          <h1 class="game-title">SURVIVAL RPG</h1>
+          <div class="game-subtitle">Mundo Abierto 2D</div>
+        </div>
+        <p style="color:var(--text-muted); font-size:0.85rem; max-width:320px;">
+          Explora la naturaleza, recolecta recursos, fabrica armas, sobrevive a la noche y derrota al Guardián del Bosque.
+        </p>
+        <div class="menu-buttons">
+          <button class="menu-btn primary" id="btn-start-new-game">⚔️ Nueva Partida</button>
+          <button class="menu-btn" id="btn-start-continue-game">📂 Continuar Partida</button>
+          <button class="menu-btn" id="btn-main-controls">⌨️ Controles</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- OVERLAY: GAME OVER -->
+    <div id="gameover-overlay">
+      <h1 class="death-title">HAS MUERTO</h1>
+      <p class="death-subtitle" id="death-reason-text">No pudiste sobrevivir a las inclemencias del mundo salvaje.</p>
+      <div style="display:flex; gap:16px; margin-top:20px;">
+        <button class="menu-btn primary" id="btn-restart-game" style="width:auto; padding:12px 24px;">Reaparecer / Nueva Partida</button>
+        <button class="menu-btn" id="btn-load-dead-game" style="width:auto; padding:12px 24px;">Cargar Partida</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Entry Script -->
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,1217 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --bg-dark: #0c0f14;
+  --bg-card: rgba(18, 24, 38, 0.88);
+  --bg-card-hover: rgba(28, 38, 58, 0.95);
+  --border-gold: #c5a059;
+  --border-gold-subtle: rgba(197, 160, 89, 0.35);
+  --text-main: #f0f4fc;
+  --text-muted: #8e9bb0;
+  --text-gold: #f5c86e;
+
+  /* Stat Colors */
+  --hp-red: #e63946;
+  --hp-red-glow: rgba(230, 57, 70, 0.6);
+  --hunger-orange: #f77f00;
+  --hunger-glow: rgba(247, 127, 0, 0.5);
+  --thirst-blue: #00b4d8;
+  --thirst-glow: rgba(0, 180, 216, 0.5);
+  --energy-yellow: #fcbf49;
+  --energy-glow: rgba(252, 191, 73, 0.5);
+  --xp-purple: #9d4edd;
+  --xp-glow: rgba(157, 78, 221, 0.6);
+
+  --font-title: 'Cinzel', serif;
+  --font-body: 'Plus Jakarta Sans', sans-serif;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --shadow-glow: 0 0 15px rgba(0, 0, 0, 0.8), 0 0 8px var(--border-gold-subtle);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  font-family: var(--font-body);
+}
+
+#game-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+canvas#game-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: -webkit-crisp-edges;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  cursor: crosshair;
+}
+
+/* ========================================================
+   HUD OVERLAY
+   ======================================================== */
+#hud-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 16px;
+}
+
+.interactive {
+  pointer-events: auto;
+}
+
+/* Top Section */
+.hud-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+}
+
+/* Player Stats Box */
+.hud-player-stats {
+  background: var(--bg-card);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border-gold-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 260px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+
+.player-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  padding-bottom: 6px;
+}
+
+.player-name-badge {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--text-gold);
+  letter-spacing: 0.5px;
+}
+
+.player-level-badge {
+  background: linear-gradient(135deg, #ffd700, #b8860b);
+  color: #111;
+  font-weight: 800;
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 12px;
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+}
+
+.stat-bar-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+}
+
+.stat-icon {
+  width: 20px;
+  text-align: center;
+  font-size: 1rem;
+}
+
+.stat-bar-track {
+  flex: 1;
+  height: 12px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.stat-bar-fill {
+  height: 100%;
+  width: 100%;
+  transition: width 0.25s ease-out;
+  border-radius: 5px;
+}
+
+.stat-text {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-shadow: 1px 1px 2px #000;
+  color: #fff;
+}
+
+.fill-hp {
+  background: linear-gradient(90deg, #ff4d6d, #c9184a);
+  box-shadow: 0 0 10px var(--hp-red-glow);
+}
+.fill-hunger {
+  background: linear-gradient(90deg, #faa307, #d00000);
+  box-shadow: 0 0 8px var(--hunger-glow);
+}
+.fill-thirst {
+  background: linear-gradient(90deg, #48cae4, #0077b6);
+  box-shadow: 0 0 8px var(--thirst-glow);
+}
+.fill-energy {
+  background: linear-gradient(90deg, #ffe066, #f39c12);
+  box-shadow: 0 0 8px var(--energy-glow);
+}
+.fill-xp {
+  background: linear-gradient(90deg, #c77dff, #7b2cbf);
+  box-shadow: 0 0 8px var(--xp-glow);
+}
+
+/* Time & Day Tracker */
+.hud-time-container {
+  background: var(--bg-card);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-gold-subtle);
+  border-radius: var(--radius-md);
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-title);
+  color: var(--text-gold);
+  font-size: 0.9rem;
+}
+
+.day-badge {
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.clock-icon {
+  font-size: 1.1rem;
+}
+
+/* Boss Health Bar (Top Center) */
+#boss-hud {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 480px;
+  max-width: 90vw;
+  background: rgba(15, 10, 22, 0.92);
+  border: 2px solid #ff4d4d;
+  border-radius: var(--radius-md);
+  padding: 10px 16px;
+  box-shadow: 0 0 25px rgba(255, 50, 50, 0.4), 0 0 8px #000;
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: none;
+  animation: bossFadeIn 0.5s ease-out;
+}
+
+@keyframes bossFadeIn {
+  from { opacity: 0; transform: translate(-50%, -20px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.boss-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.boss-name {
+  font-family: var(--font-title);
+  font-weight: 800;
+  color: #ff6b6b;
+  font-size: 1.1rem;
+  letter-spacing: 1px;
+}
+
+.boss-title {
+  font-size: 0.75rem;
+  color: #ffb4a2;
+}
+
+.boss-bar-track {
+  height: 16px;
+  background: rgba(0,0,0,0.7);
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(255, 100, 100, 0.3);
+}
+
+.boss-bar-fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #ff0a54, #ff5400, #ff0054);
+  box-shadow: 0 0 15px rgba(255, 0, 80, 0.8);
+  transition: width 0.2s ease-out;
+}
+
+/* Minimap Box */
+.hud-minimap-wrapper {
+  background: var(--bg-card);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-gold-subtle);
+  border-radius: var(--radius-md);
+  padding: 6px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+  position: relative;
+}
+
+#minimap-canvas {
+  width: 150px;
+  height: 150px;
+  border-radius: var(--radius-sm);
+  display: block;
+  background: #111;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.minimap-btn {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.75);
+  border: 1px solid var(--border-gold);
+  color: var(--text-gold);
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.minimap-btn:hover {
+  background: var(--border-gold);
+  color: #000;
+}
+
+/* Active Quest Widget (Top Left, under stats) */
+.hud-quest-widget {
+  margin-top: 10px;
+  background: var(--bg-card);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-gold-subtle);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+}
+
+.quest-widget-title {
+  font-family: var(--font-title);
+  color: var(--text-gold);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.quest-current-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.quest-current-objective {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.quest-progress-text {
+  font-size: 0.75rem;
+  color: #52b788;
+  font-weight: 700;
+}
+
+/* Bottom HUD Section */
+.hud-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  width: 100%;
+}
+
+/* Action Quick Bar Buttons (Left of bottom) */
+.hud-quick-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.hud-btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border-gold-subtle);
+  color: var(--text-main);
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(6px);
+}
+
+.hud-btn:hover {
+  background: var(--border-gold);
+  color: #0b0f19;
+  border-color: var(--border-gold);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(197, 160, 89, 0.4);
+}
+
+.hud-btn kbd {
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+}
+
+/* Center Hotbar */
+.hud-hotbar {
+  display: flex;
+  gap: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-gold-subtle);
+  border-radius: var(--radius-lg);
+  padding: 8px 12px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+}
+
+.hotbar-slot {
+  width: 52px;
+  height: 52px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.hotbar-slot:hover {
+  border-color: var(--border-gold);
+  background: rgba(197, 160, 89, 0.15);
+}
+
+.hotbar-slot.active {
+  border: 2px solid var(--border-gold);
+  box-shadow: 0 0 10px rgba(197, 160, 89, 0.6);
+  transform: translateY(-4px);
+  background: rgba(197, 160, 89, 0.25);
+}
+
+.slot-key {
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.slot-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.slot-count {
+  position: absolute;
+  bottom: 2px;
+  right: 4px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 1px 1px 2px #000;
+}
+
+/* Prompt / Interaction Tooltip (Center screen) */
+#interaction-prompt {
+  position: absolute;
+  top: 60%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(15, 20, 30, 0.9);
+  border: 1px solid var(--border-gold);
+  border-radius: 20px;
+  padding: 8px 18px;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-gold);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.8);
+  pointer-events: none;
+  animation: promptPulse 1.5s infinite alternate;
+}
+
+@keyframes promptPulse {
+  from { transform: translate(-50%, -50%) scale(1); }
+  to { transform: translate(-50%, -50%) scale(1.05); }
+}
+
+/* Toast Notifications (Right screen) */
+#toast-container {
+  position: absolute;
+  bottom: 90px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+  z-index: 50;
+}
+
+.toast {
+  background: rgba(15, 20, 30, 0.92);
+  border-left: 4px solid var(--border-gold);
+  border-radius: 4px;
+  padding: 10px 16px;
+  color: #fff;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+  animation: toastIn 0.3s ease-out forwards;
+}
+
+.toast.toast-loot { border-left-color: #52b788; }
+.toast.toast-quest { border-left-color: #ffd166; }
+.toast.toast-danger { border-left-color: #e63946; }
+.toast.toast-levelup { border-left-color: #c77dff; }
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* ========================================================
+   MODAL WINDOWS (Inventory, Crafting, Quest, Map, Pause)
+   ======================================================== */
+.modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(5, 7, 12, 0.75);
+  backdrop-filter: blur(8px);
+  z-index: 100;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  pointer-events: auto;
+}
+
+.modal-window {
+  background: var(--bg-card);
+  border: 2px solid var(--border-gold);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9), 0 0 20px var(--border-gold-subtle);
+  display: flex;
+  flex-direction: column;
+  max-width: 90vw;
+  max-height: 90vh;
+  animation: modalPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  overflow: hidden;
+}
+
+@keyframes modalPop {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  background: rgba(0, 0, 0, 0.4);
+  border-bottom: 1px solid var(--border-gold-subtle);
+}
+
+.modal-title {
+  font-family: var(--font-title);
+  color: var(--text-gold);
+  font-size: 1.25rem;
+  letter-spacing: 1px;
+}
+
+.modal-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.4rem;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.modal-close-btn:hover {
+  color: #ff4d6d;
+}
+
+.modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  gap: 20px;
+}
+
+/* ========================================================
+   INVENTORY MODAL
+   ======================================================== */
+#inventory-modal .modal-window {
+  width: 780px;
+}
+
+.inventory-layout {
+  display: flex;
+  gap: 24px;
+  width: 100%;
+}
+
+.inventory-left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.section-label {
+  font-family: var(--font-title);
+  font-size: 0.9rem;
+  color: var(--text-gold);
+  letter-spacing: 0.5px;
+}
+
+.inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+}
+
+.inv-slot {
+  width: 52px;
+  height: 52px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-sm);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.inv-slot:hover {
+  border-color: var(--border-gold);
+  background: rgba(197, 160, 89, 0.15);
+}
+
+.inv-slot.selected {
+  border: 2px solid var(--border-gold);
+  box-shadow: 0 0 10px rgba(197, 160, 89, 0.6);
+  background: rgba(197, 160, 89, 0.25);
+}
+
+/* Equipment Section */
+.equipment-section {
+  display: flex;
+  gap: 12px;
+}
+
+.equip-slot-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.equip-slot-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+/* Item Details Panel (Right side) */
+.item-details-panel {
+  width: 250px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.item-details-top {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.item-detail-icon {
+  font-size: 2.5rem;
+  text-align: center;
+  padding: 10px 0;
+  background: rgba(255,255,255,0.03);
+  border-radius: var(--radius-sm);
+}
+
+.item-detail-name {
+  font-family: var(--font-title);
+  font-size: 1.1rem;
+  color: var(--text-gold);
+  text-align: center;
+}
+
+.item-detail-type {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.item-detail-desc {
+  font-size: 0.85rem;
+  color: #cad2c5;
+  line-height: 1.4;
+  margin-top: 6px;
+}
+
+.item-detail-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 10px;
+  font-size: 0.8rem;
+  color: #70e000;
+}
+
+.item-actions-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.action-btn {
+  background: rgba(197, 160, 89, 0.2);
+  border: 1px solid var(--border-gold);
+  color: var(--text-gold);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.action-btn:hover {
+  background: var(--border-gold);
+  color: #0b0f19;
+}
+
+.action-btn.btn-danger {
+  border-color: #e63946;
+  color: #e63946;
+  background: rgba(230, 57, 70, 0.1);
+}
+
+.action-btn.btn-danger:hover {
+  background: #e63946;
+  color: #fff;
+}
+
+/* ========================================================
+   CRAFTING MODAL
+   ======================================================== */
+#crafting-modal .modal-window {
+  width: 820px;
+}
+
+.crafting-layout {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+}
+
+.craft-categories {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 160px;
+}
+
+.craft-cat-btn {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.craft-cat-btn:hover, .craft-cat-btn.active {
+  background: rgba(197, 160, 89, 0.2);
+  border-color: var(--border-gold);
+  color: var(--text-gold);
+  font-weight: 700;
+}
+
+.craft-recipes-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.recipe-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.recipe-card:hover, .recipe-card.selected {
+  border-color: var(--border-gold);
+  background: rgba(197, 160, 89, 0.15);
+}
+
+.recipe-card-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.recipe-card-icon {
+  font-size: 1.5rem;
+}
+
+.recipe-card-name {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #fff;
+}
+
+.craft-preview-panel {
+  width: 250px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.ingredients-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.ingredient-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  padding: 4px 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 4px;
+}
+
+.ingredient-item.has-enough {
+  color: #52b788;
+}
+
+.ingredient-item.not-enough {
+  color: #e63946;
+}
+
+/* ========================================================
+   QUEST MODAL
+   ======================================================== */
+#quest-modal .modal-window {
+  width: 700px;
+}
+
+.quest-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.quest-card {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.quest-card.completed {
+  border-color: #52b788;
+  background: rgba(82, 183, 136, 0.08);
+}
+
+.quest-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.quest-name {
+  font-family: var(--font-title);
+  color: var(--text-gold);
+  font-size: 1rem;
+}
+
+.quest-desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.quest-reward {
+  font-size: 0.8rem;
+  color: #ffd166;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+/* ========================================================
+   WORLD MAP MODAL
+   ======================================================== */
+#map-modal .modal-window {
+  width: 850px;
+}
+
+.world-map-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+#full-map-canvas {
+  width: 580px;
+  height: 420px;
+  background: #111;
+  border: 2px solid var(--border-gold);
+  border-radius: var(--radius-md);
+  display: block;
+}
+
+.map-legend {
+  display: flex;
+  gap: 16px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+/* ========================================================
+   NPC DIALOGUE MODAL
+   ======================================================== */
+#dialogue-modal .modal-window {
+  width: 650px;
+}
+
+.dialogue-content {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+}
+
+.npc-portrait {
+  width: 90px;
+  height: 90px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 2px solid var(--border-gold);
+  border-radius: var(--radius-md);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 3rem;
+}
+
+.dialogue-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.npc-name {
+  font-family: var(--font-title);
+  color: var(--text-gold);
+  font-size: 1.15rem;
+}
+
+.dialogue-text {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: #f0f4fc;
+  min-height: 50px;
+}
+
+.dialogue-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ========================================================
+   CHEST STORAGE MODAL
+   ======================================================== */
+#chest-modal .modal-window {
+  width: 800px;
+}
+
+.chest-layout {
+  display: flex;
+  gap: 24px;
+  width: 100%;
+}
+
+.chest-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chest-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+/* ========================================================
+   PAUSE MENU & MAIN MENU
+   ======================================================== */
+#pause-modal .modal-window, #menu-overlay .modal-window {
+  width: 420px;
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  text-align: center;
+}
+
+.game-title {
+  font-family: var(--font-title);
+  font-size: 2.2rem;
+  color: var(--text-gold);
+  text-shadow: 0 0 15px rgba(245, 200, 110, 0.4);
+  letter-spacing: 2px;
+  line-height: 1.2;
+}
+
+.game-subtitle {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+.menu-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.menu-btn {
+  background: rgba(18, 24, 38, 0.9);
+  border: 1px solid var(--border-gold-subtle);
+  color: var(--text-main);
+  padding: 14px 20px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-title);
+  font-size: 1rem;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  width: 100%;
+}
+
+.menu-btn:hover {
+  background: var(--border-gold);
+  color: #0b0f19;
+  border-color: var(--border-gold);
+  box-shadow: 0 4px 20px rgba(197, 160, 89, 0.5);
+  transform: translateY(-2px);
+}
+
+.menu-btn.primary {
+  background: linear-gradient(135deg, #c5a059, #8c6d2d);
+  color: #0c0f14;
+  font-weight: 700;
+}
+
+/* ========================================================
+   CONTROLS MODAL
+   ======================================================== */
+#controls-modal .modal-window {
+  width: 580px;
+}
+
+.controls-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.control-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+}
+
+.control-key {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-family: monospace;
+  font-weight: 700;
+  color: var(--text-gold);
+}
+
+/* ========================================================
+   GAME OVER SCREEN
+   ======================================================== */
+#gameover-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(30, 5, 10, 0.88);
+  backdrop-filter: blur(10px);
+  z-index: 120;
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  text-align: center;
+  animation: deathScreen 1s ease-out;
+}
+
+@keyframes deathScreen {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.death-title {
+  font-family: var(--font-title);
+  font-size: 3rem;
+  color: #e63946;
+  text-shadow: 0 0 25px rgba(230, 57, 70, 0.8);
+}
+
+.death-subtitle {
+  font-size: 1.1rem;
+  color: #cad2c5;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .hud-player-stats { min-width: 200px; padding: 8px 12px; }
+  .hud-minimap-wrapper { display: none; }
+  .hud-quest-widget { display: none; }
+  .hud-hotbar { padding: 4px 6px; }
+  .hotbar-slot { width: 44px; height: 44px; }
+  .inventory-layout { flex-direction: column; }
+  .item-details-panel { width: 100%; }
+}

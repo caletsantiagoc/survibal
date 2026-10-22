@@ -1,0 +1,17 @@
+{
+  "name": "survival-rpg-mundo-abierto-2d",
+  "version": "1.0.0",
+  "description": "Videojuego 2D de supervivencia y RPG en mundo abierto para navegador",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": ["survival", "rpg", "game", "canvas", "html5", "javascript"],
+  "author": "Antigravity",
+  "license": "MIT",
+  "devDependencies": {
+    "vite": "^6.0.0"
+  }
+}
