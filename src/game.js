@@ -26,7 +26,7 @@ export class Game {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
 
-    this.state = 'MENU'; // 'MENU', 'PLAYING', 'PAUSED', 'GAMEOVER'
+    this.state = 'MENU';
     this.lastTime = 0;
     this.autoSaveTimer = 0;
 
@@ -82,7 +82,7 @@ export class Game {
     this.npcs = generated.npcs;
     this.boss = generated.boss;
 
-    // Spawn player in peaceful meadow near the village path (x: 52 * 32, y: 91 * 32)
+    // Spawn player in peaceful meadow near the village path
     const spawnX = 52 * TILE_SIZE;
     const spawnY = 91 * TILE_SIZE;
 
@@ -100,7 +100,6 @@ export class Game {
       }
       this.keysDown.add(e.code);
 
-      // System key handling
       this.handleGlobalKeys(e);
     });
 
@@ -112,13 +111,12 @@ export class Game {
       this.mouseDown = true;
       this.mouseJustPressed = true;
 
-      // Sound activation on first user click
       this.soundManager.init();
 
-      // Check building placement
       if (this.buildingSystem.placementMode) {
-        const worldX = this.camera.x + e.clientX;
-        const worldY = this.camera.y + e.clientY;
+        const rect = this.canvas.getBoundingClientRect();
+        const worldX = this.camera.x + e.clientX - rect.left;
+        const worldY = this.camera.y + e.clientY - rect.top;
         this.buildingSystem.placeBuilding(worldX, worldY);
       }
     });
@@ -132,8 +130,9 @@ export class Game {
       this.mousePos.y = e.clientY;
 
       if (this.buildingSystem.placementMode) {
-        this.buildingSystem.previewX = this.camera.x + e.clientX;
-        this.buildingSystem.previewY = this.camera.y + e.clientY;
+        const rect = this.canvas.getBoundingClientRect();
+        this.buildingSystem.previewX = this.camera.x + e.clientX - rect.left;
+        this.buildingSystem.previewY = this.camera.y + e.clientY - rect.top;
       }
     });
   }
@@ -142,7 +141,6 @@ export class Game {
     if (this.state === 'MENU' || this.state === 'GAMEOVER') return;
 
     if (e.code === 'Escape') {
-      // If any modal is open, close it first; otherwise toggle pause
       if (this.closeAnyOpenModal()) {
         return;
       }
@@ -152,7 +150,6 @@ export class Game {
 
     if (this.state === 'PAUSED') return;
 
-    // Toggle Modals
     if (e.code === 'KeyI') {
       this.inventoryUI.toggle();
     } else if (e.code === 'KeyC') {
@@ -175,13 +172,42 @@ export class Game {
 
   closeAnyOpenModal() {
     let closed = false;
-    if (this.inventoryUI.isOpen()) { this.inventoryUI.close(); closed = true; }
-    if (this.craftingUI.isOpen()) { this.craftingUI.close(); closed = true; }
-    if (this.questUI.isOpen()) { this.questUI.close(); closed = true; }
-    if (this.mapUI.isOpen()) { this.mapUI.close(); closed = true; }
-    if (this.dialogueUI.modal.style.display === 'flex') { this.dialogueUI.close(); closed = true; }
-    if (this.dialogueUI.shopModal.style.display === 'flex') { this.dialogueUI.closeShop(); closed = true; }
-    if (this.buildingSystem.placementMode) { this.buildingSystem.cancelPlacement(); closed = true; }
+
+    if (this.inventoryUI.isOpen()) {
+      this.inventoryUI.close();
+      closed = true;
+    }
+
+    if (this.craftingUI.isOpen()) {
+      this.craftingUI.close();
+      closed = true;
+    }
+
+    if (this.questUI.isOpen()) {
+      this.questUI.close();
+      closed = true;
+    }
+
+    if (this.mapUI.isOpen()) {
+      this.mapUI.close();
+      closed = true;
+    }
+
+    if (this.dialogueUI.modal.style.display === 'flex') {
+      this.dialogueUI.close();
+      closed = true;
+    }
+
+    if (this.dialogueUI.shopModal.style.display === 'flex') {
+      this.dialogueUI.closeShop();
+      closed = true;
+    }
+
+    if (this.buildingSystem.placementMode) {
+      this.buildingSystem.cancelPlacement();
+      closed = true;
+    }
+
     return closed;
   }
 
@@ -195,6 +221,7 @@ export class Game {
     document.getElementById('btn-pause-quick').addEventListener('click', () => this.menuManager.togglePause());
 
     const btnMute = document.getElementById('btn-mute-sound');
+
     btnMute.addEventListener('click', () => {
       const isMuted = this.soundManager.toggleMute();
       btnMute.textContent = isMuted ? '🔇' : '🔊';
@@ -214,6 +241,7 @@ export class Game {
   loadSavedGame() {
     this.initWorld();
     const res = SaveSystem.load(this);
+
     if (res.success) {
       this.state = 'PLAYING';
       this.soundManager.init();
@@ -239,16 +267,19 @@ export class Game {
     // 1. Check NPC interaction
     for (const npc of this.npcs) {
       const dist = Math.hypot(npc.x - p.x, npc.y - p.y);
+
       if (dist <= 55) {
         npc.interact(this);
         return;
       }
     }
 
-    // 2. Check Natural Resources interaction (Tree, Rock, Water Well)
+    // 2. Check Natural Resources interaction
     for (const res of this.resources) {
       if (res.depleted) continue;
+
       const dist = Math.hypot(res.x - p.x, res.y - p.y);
+
       if (dist <= 55) {
         if (res.type === 'water_source') {
           p.drink(50);
@@ -257,8 +288,8 @@ export class Game {
           this.hud.showToast('Bebiste agua fresca y llenaste un frasco.', 'toast-loot');
           return;
         } else {
-          // Harvest node
           const drops = res.harvest(1);
+
           if (res.type === 'tree') {
             this.soundManager.playChop();
             this.particleSystem.emitChopWood(res.x, res.y);
@@ -273,16 +304,17 @@ export class Game {
             this.spawnDroppedItem(d.id, d.count, res.x, res.y);
             this.questSystem.onGather(d.id, d.count);
           }
+
           return;
         }
       }
     }
 
-    // 3. Check Placed Buildings interaction (Campfire, Bed)
+    // 3. Check Placed Buildings interaction
     const nearBuilding = this.buildingSystem.getNearBuilding(p.x, p.y);
+
     if (nearBuilding) {
       if (nearBuilding.type === 'campfire') {
-        // Cook raw meat if in inventory
         if (p.inventory.hasItem('raw_meat', 1)) {
           p.inventory.removeItem('raw_meat', 1);
           p.inventory.addItem('cooked_meat', 1);
@@ -291,6 +323,7 @@ export class Game {
         } else {
           this.hud.showToast('La fogata te abriga e ilumina la noche.', 'toast-loot');
         }
+
         return;
       } else if (nearBuilding.type === 'bed') {
         this.dayNight.sleep();
@@ -304,6 +337,7 @@ export class Game {
 
   checkInteractionPrompt() {
     const p = this.player;
+
     if (p.isDead || this.state !== 'PLAYING') {
       this.hud.hidePrompt();
       return;
@@ -327,15 +361,18 @@ export class Game {
         else if (res.type === 'bush') this.hud.showPrompt('Recolectar Bayas');
         else if (res.type === 'herb') this.hud.showPrompt('Recolectar Hierbas');
         else if (res.type === 'water_source') this.hud.showPrompt('Beber / Recolectar Agua');
+
         return;
       }
     }
 
     // Check Buildings
     const b = this.buildingSystem.getNearBuilding(p.x, p.y);
+
     if (b) {
       if (b.type === 'campfire') this.hud.showPrompt('Asar Carne en la Fogata');
       else if (b.type === 'bed') this.hud.showPrompt('Dormir y pasar la noche');
+
       return;
     }
 
@@ -343,10 +380,21 @@ export class Game {
   }
 
   // --- Input helper methods for Player ---
-  isDown(code) { return this.keysDown.has(code); }
-  isJustPressed(code) { return this.keysJustPressed.has(code); }
-  isMouseDown() { return this.mouseDown; }
-  isMouseJustPressed() { return this.mouseJustPressed; }
+  isDown(code) {
+    return this.keysDown.has(code);
+  }
+
+  isJustPressed(code) {
+    return this.keysJustPressed.has(code);
+  }
+
+  isMouseDown() {
+    return this.mouseDown;
+  }
+
+  isMouseJustPressed() {
+    return this.mouseJustPressed;
+  }
 
   update(dt) {
     if (this.state !== 'PLAYING') return;
@@ -376,15 +424,16 @@ export class Game {
       this.boss.update(dt, this.player, this.map, this);
     }
 
-    // Update Dropped Items (Pickup proximity)
+    // Update Dropped Items
     for (let i = this.droppedItems.length - 1; i >= 0; i--) {
       const item = this.droppedItems[i];
       item.update(dt);
 
       const dist = Math.hypot(this.player.x - item.x, this.player.y - item.y);
+
       if (dist < 32) {
-        // Collect item!
         const added = this.player.inventory.addItem(item.itemId, item.count);
+
         if (added > 0) {
           this.soundManager.playCollect();
           this.particleSystem.addFloatingText(item.x, item.y - 12, `+${item.count}`, '#52b788', 14);
@@ -396,12 +445,13 @@ export class Game {
       }
     }
 
-    // Nighttime enemy spawner (every ~20s at night if under 25 enemies)
+    // Nighttime enemy spawner
     if (this.dayNight.isNight() && this.enemies.filter(e => !e.isDead).length < 22 && Math.random() < 0.005) {
       const spawnDist = 320 + Math.random() * 150;
       const angle = Math.random() * Math.PI * 2;
       const sx = this.player.x + Math.cos(angle) * spawnDist;
       const sy = this.player.y + Math.sin(angle) * spawnDist;
+
       if (!this.map.isSolid(sx, sy)) {
         const type = Math.random() < 0.6 ? 'zombie' : 'wolf';
         this.enemies.push(new (this.enemies[0]?.constructor || Object)(Date.now(), type, sx, sy));
@@ -411,6 +461,7 @@ export class Game {
     // Camera follow player smoothly
     const targetCamX = this.player.x - this.canvas.width / 2;
     const targetCamY = this.player.y - this.canvas.height / 2;
+
     this.camera.x = Math.max(0, Math.min(WORLD_WIDTH - this.canvas.width, targetCamX));
     this.camera.y = Math.max(0, Math.min(WORLD_HEIGHT - this.canvas.height, targetCamY));
 
@@ -419,6 +470,7 @@ export class Game {
 
     // Auto-save every 120s
     this.autoSaveTimer += dt;
+
     if (this.autoSaveTimer >= 120) {
       this.autoSaveTimer = 0;
       SaveSystem.save(this);
@@ -436,7 +488,6 @@ export class Game {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     if (this.state === 'MENU') {
-      // Atmospheric background animated art for Menu
       this.renderMenuBackground();
       return;
     }
@@ -444,7 +495,7 @@ export class Game {
     // 1. Render World Map Tiles
     this.map.render(this.ctx, this.camera);
 
-    // 2. Render Resources (Stumps, Bushes, Rocks)
+    // 2. Render Resources
     for (const res of this.resources) {
       res.render(this.ctx, this.camera);
     }
@@ -478,23 +529,33 @@ export class Game {
     // 9. Render Combat & Ambient Particles
     this.particleSystem.render(this.ctx, this.camera);
 
-    // 10. Render Day/Night Lighting Overlay with Dynamic Light Cones
+    // 10. Render Day/Night Lighting Overlay
     const lights = [
-      { x: this.player.x, y: this.player.y, radius: this.player.inventory.equipment.accessory?.id === 'torch' ? 240 : 120 }
+      {
+        x: this.player.x,
+        y: this.player.y,
+        radius: this.player.inventory.equipment.accessory?.id === 'torch' ? 240 : 120,
+        type: 'player'
+      }
     ];
 
-    // Add campfire lights
+    // Campfire lights with warm glow
     for (const b of this.buildingSystem.buildings) {
       if (b.type === 'campfire') {
-        lights.push({ x: b.x, y: b.y, radius: 180 });
+        lights.push({
+          x: b.x,
+          y: b.y,
+          radius: 220,
+          type: 'campfire'
+        });
       }
     }
 
-    // Add village street lamp lights
+    // Village street lamp lights
     lights.push(
-      { x: 95 * TILE_SIZE, y: 89 * TILE_SIZE, radius: 130 },
-      { x: 104 * TILE_SIZE, y: 89 * TILE_SIZE, radius: 130 },
-      { x: 98 * TILE_SIZE, y: 92 * TILE_SIZE, radius: 150 }
+      { x: 95 * TILE_SIZE, y: 89 * TILE_SIZE, radius: 130, type: 'lamp' },
+      { x: 104 * TILE_SIZE, y: 89 * TILE_SIZE, radius: 130, type: 'lamp' },
+      { x: 98 * TILE_SIZE, y: 92 * TILE_SIZE, radius: 150, type: 'lamp' }
     );
 
     this.dayNight.renderLighting(this.ctx, this.camera, lights);
@@ -503,6 +564,7 @@ export class Game {
   renderMenuBackground() {
     const time = Date.now() * 0.001;
     const ctx = this.ctx;
+
     ctx.fillStyle = '#0b131f';
     ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
@@ -511,6 +573,7 @@ export class Game {
       const x = (Math.sin(i * 123 + time * 0.2) * 0.5 + 0.5) * this.canvas.width;
       const y = (Math.cos(i * 321 + time * 0.15) * 0.5 + 0.5) * this.canvas.height;
       const rad = 1 + (Math.sin(i + time) * 0.5 + 0.5) * 2;
+
       ctx.fillStyle = 'rgba(255, 215, 0, 0.5)';
       ctx.beginPath();
       ctx.arc(x, y, rad, 0, Math.PI * 2);
@@ -520,7 +583,8 @@ export class Game {
 
   loop(timestamp) {
     if (!this.lastTime) this.lastTime = timestamp;
-    const dt = Math.min((timestamp - this.lastTime) / 1000, 0.1); // clamp dt to 100ms
+
+    const dt = Math.min((timestamp - this.lastTime) / 1000, 0.1);
     this.lastTime = timestamp;
 
     this.update(dt);
